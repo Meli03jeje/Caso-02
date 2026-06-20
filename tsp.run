@@ -1,0 +1,47 @@
+/* =====================================================================
+   SCRIPT DE EJECUCION: resuelve el modelo TSP y reporta resultados
+   Uso:  ampl tsp.run
+   ===================================================================== */
+
+reset;
+
+model tsp.mod;
+data tsp.dat;
+
+# Elija el solver disponible en su instalacion de AMPL.
+# Cualquiera de estos resuelve el modelo de forma EXACTA (no heuristica):
+option solver highs;     # alternativas: cbc, gurobi, cplex, xpress
+
+solve;
+
+# --------------------------- REPORTE DE RESULTADOS ------------------------
+
+printf "\n============================================\n";
+printf " RESULTADOS DEL MODELO TSP\n";
+printf "============================================\n";
+printf "Estado de la solucion : %s\n", solve_result;
+printf "Distancia total optima: %g km\n", DistanciaTotal;
+
+printf "\n--- Arcos seleccionados (i -> j : distancia) ---\n";
+for {i in NODOS, j in NODOS: i <> j and x[i,j] > 0.5} {
+    printf "  %d -> %d  :  %g km\n", i, j, d[i,j];
+}
+
+# Reconstruir la secuencia de visita a partir de los arcos activos
+param succ {NODOS};
+for {i in NODOS} {
+    let succ[i] := sum {j in NODOS: j <> i and x[i,j] > 0.5} j;
+}
+
+param actual;
+let actual := 0;
+printf "\n--- Secuencia de visita (inicia y termina en el deposito 0) ---\n";
+printf "0";
+for {k in 1..n} {
+    let actual := succ[actual];
+    printf " -> %d", actual;
+}
+printf "\n";
+
+printf "\nNumero de arcos en la ruta: %d (debe ser igual a n = %d)\n", n, n;
+printf "============================================\n";
